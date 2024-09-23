@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
+#include <string.h> //cosas de strings
 
 //* Organización de las tareas en el txt
 //Nombre sin espacios    ultima fecha       siguiente fecha       gradp
@@ -10,6 +10,14 @@
 char** tareas = NULL;
 int numLineas = 0;
 int capacidad = 20;
+void liberarMemoria() {
+    printf("Liberando memoria:\n");
+    for (int i = 0; i < numLineas; i++) {
+        free(tareas[i]);  // Liberar la memoria de cada línea
+    }
+
+    free(tareas);  // Liberar el array dinámico
+}
 bool anadirLinea() {
     if (numLineas >= capacidad) {
         capacidad *= 2;  // Doblar la capacidad del array
@@ -26,20 +34,12 @@ bool anadirLinea() {
         tareas = temp;
     }
     numLineas++;
+    return false;
 }
 bool pasarTareasAVariable() {
     FILE* tareasArchivo;
     // Abrir el archivo de tareas
     tareasArchivo = fopen("tareas.txt", "r");
-
-    // Asignar memoria inicial para el array de punteros a char
-    tareas = (char**)malloc(capacidad * sizeof(char*));
-
-    if (tareas == NULL) {
-        perror("Error al asignar memoria");
-        fclose(tareasArchivo);
-        return true;
-    }
 
     if (tareasArchivo == NULL) {
         // Si el archivo no existe, crearlo con "w+"
@@ -52,10 +52,24 @@ bool pasarTareasAVariable() {
         }
         return false;
     }
+    // Asignar memoria inicial para el array de punteros a char
+    tareas = (char**)malloc(capacidad * sizeof(char*));
+
+    if (tareas == NULL) {
+        perror("Error al asignar memoria");
+        fclose(tareasArchivo);
+        return true;
+    }
+
+
 
     char buffer[128];
     // Leer cada línea del archivo
     while (fgets(buffer, 128, tareasArchivo) != NULL) {
+        size_t len = strlen(buffer);
+        if (len > 0 && buffer[len - 1] == '\n') {
+            buffer[len - 1] = '\0';
+        }
         // Comprobar si necesitamos más espacio en el array de punteros
         bool error = anadirLinea();
         if (error) {
@@ -80,18 +94,37 @@ bool pasarTareasAVariable() {
     fclose(tareasArchivo);
     return false;
 }
-void extraerFecha(char fecha[], char linea[]) {
-    int palabra_numero = 1; // Contador de palabras
-    // Usar strtok para dividir la línea en palabras usando el espacio como delimitador
-    fecha = strtok(linea, " \t\n"); // Eliminar espacios, tabulaciones y saltos de línea
+void preguntarGrado(char grado[]) {
+    bool gradoValido = false;
+    do {
+        printf("Cual es el grado que le deseas dar al estudio?(0 estudiar manana, 1 dentro de tres días, 2 una semana, 3 dos semanas, 4 28 dias ...)\n  ");
+        scanf(" %s", grado);
 
-    // Iterar por cada palabra en la línea
-    while (fecha != NULL) {
-        if (palabra_numero == 3) { // Si es la tercera palabra
+        char* endptr;
+        int gradoInt = strtol(grado, &endptr, 10);
+        if (atoi(grado) < 0 || atoi(grado) > 99 && *endptr != '\0') {
+            // Verificar si la entrada es numérica
+            if (*endptr != '\0')
+                printf("Entrada inválida. Por favor, ingresa un número.\n");
+            else
+                printf("Grado inválido. Por favor, ingresa un número entre 0 y 99\n");
+            gradoValido = false;
+        }
+        else
+            gradoValido = true;
+    } while (!gradoValido);
+}
+void extraerFecha(char fecha[], int indice) {
+    int palabra_numero = 1;
+    char tareaCopia[128];
+    strcpy(tareaCopia, tareas[indice]);
+    char* token = strtok(tareaCopia, " \t\n");
+    while (token != NULL) {
+        if (palabra_numero == 3) {
+            strcpy(fecha, token);
             break;
         }
-        // Pasar a la siguiente palabra
-        fecha = strtok(NULL, " \t\n");
+        token = strtok(NULL, " \t\n");
         palabra_numero++;
     }
 }
@@ -114,52 +147,50 @@ void copiarFechaHoy(char fechaHoy[]) {
         info_tiempo->tm_year + 1900);
 }
 bool esTareaConFecha(int indice, char fecha[]) {
-    char* palabra;
-    int palabra_numero = 1; // Contador de palabras
-    char buffer[128]; // Buffer para copiar la línea actual
-    // Copiar la línea a un buffer para que strtok no modifique la cadena original
-    strcpy(buffer, tareas[indice]);
-    // Usar strtok para dividir la línea en palabras usando el espacio como delimitador
-    palabra = strtok(buffer, " \t\n"); // Eliminar espacios, tabulaciones y saltos de línea
-
-    // Iterar por cada palabra en la línea
-    while (palabra != NULL) {
-        if (palabra_numero == 3) { // Si es la tercera palabra
-            if (strcmp(palabra, fecha) == 0) // Comprobar si es igual a la palabra buscada
-                return true;
-            break; // Salir del bucle ya que solo nos interesa la tercera palabra
-        }
-        // Pasar a la siguiente palabra
-        palabra = strtok(NULL, " \t\n");
-        palabra_numero++;
-    }
-    return false;
+    char fechaIndice[128];
+    extraerFecha(fechaIndice, indice);
+    if (strcmp(fechaIndice, fecha) == 0)
+        return true;
+    else
+        return false;
 }
-int buscarIndiceFecha(char fecha[]) {
-    // Leer el archivo línea por línea
+bool fechaTareaAnteriorOIgual(int indice, char fecha[]) {
+    struct tm fechaTarea = { 0 }, fechaComparar = { 0 };
+
+    sscanf(fecha, "%2d/%2d/%4d", &fechaComparar.tm_mday, &fechaComparar.tm_mon, &fechaComparar.tm_year);
+    fechaComparar.tm_year -= 1900; // Ajustar año
+    fechaComparar.tm_mon -= 1;     // Ajustar mes
+
+    char fechaIndice[128];
+    extraerFecha(fechaIndice, indice);
+    sscanf(fechaIndice, "%2d/%2d/%4d", &fechaTarea.tm_mday, &fechaTarea.tm_mon, &fechaTarea.tm_year);
+    fechaTarea.tm_year -= 1900; // Ajustar año
+    fechaTarea.tm_mon -= 1;     // Ajustar mes
+
+    time_t tiempoTarea = mktime(&fechaTarea);
+    time_t tiempoComparar = mktime(&fechaComparar);
+
+    return difftime(tiempoTarea, tiempoComparar) <= 0;
+}
+int buscarPosicionFecha(char fecha[]) {
     for (int i = 0; i < numLineas;i++) {
-        if (esTareaConFecha(i, fecha))
+        if (fechaTareaAnteriorOIgual(i, fecha))
             return i;
     }
-    return -1;
+    return numLineas;
 }
 
 void calcularSiguienteFecha(struct tm fecha_original, int grado, char resultado[]) {
-    actualizarTiempo();
     int dias;
-    if (grado == 1)
+    if (grado == 0)
         dias = 1;
-    else if (grado == 2)
+    else if (grado == 1)
         dias = 3;
-    else if (grado == 3)
+    else if (grado == 2)
         dias = 7;
-    else if (grado == 4)
-        dias = 14;
-    else if (grado == 5)
-        dias = 30;
     else {
-        dias = 30;
-        for (int contador = grado; contador > 5; contador--)
+        dias = 7;
+        for (int contador = grado; contador > 2; contador--)
             dias *= 2;
     }
     // Copia la fecha original para trabajar sobre la copia
@@ -182,28 +213,37 @@ void calcularSiguienteFecha(struct tm fecha_original, int grado, char resultado[
 int buscarIndiceTareasHoy() {
     char fechaHoy[100]; // La palabra que queremos buscar
     copiarFechaHoy(fechaHoy);
-    return buscarIndiceFecha(fechaHoy);
+    return buscarPosicionFecha(fechaHoy);
 }
 
 bool escribirTareasHoy() {
-    char fechaHoy[100]; // La palabra que queremos buscar
-
-    sprintf(fechaHoy, "%02d/%02d/%d",
-        info_tiempo->tm_mday,      // Día del mes (1-31)
-        info_tiempo->tm_mon + 1,   // Mes (0-11, por eso se suma 1)
-        info_tiempo->tm_year + 1900);
-
     int numerador = 1;
-    int i = buscarIndiceTareasHoy();
-    if (i == -1)
-        return true;
-    for (; i < numLineas;i++) {
-        if (esTareaConFecha(i, fechaHoy)) {
-            printf("%d. %s \n", numerador, tareas[i]);
+    char fechaHoy[100];
+    copiarFechaHoy(fechaHoy);
+
+    bool found = false;
+    printf("Nombre   est ant   est post   grado\n");
+    int i = 0;
+    //Busca la primera tarea que es de hoy o anterior
+    while (i < numLineas && !fechaTareaAnteriorOIgual(i, fechaHoy))
+        i++;
+    if (i >= numLineas)
+        printf("No hay tareas programadas para hoy\n");
+    if (i < numLineas && !esTareaConFecha(i, fechaHoy))
+        printf("No hay tareas programadas para hoy\n");
+
+    for (; i < numLineas && esTareaConFecha(i, fechaHoy); i++) {
+        printf("%d. %s\n", numerador, tareas[i]);
+        numerador++;
+    }
+
+    //Escribir tareas anteriores si las hay
+    if (i < numLineas && fechaTareaAnteriorOIgual(i, fechaHoy)) {
+        printf("\nTareas anteriores\n");
+        for (; i < numLineas; i++) {
+            printf("%d. %s\n", numerador, tareas[i]);
             numerador++;
         }
-        else
-            return false;
     }
     return false;
 }
@@ -211,200 +251,194 @@ bool escribirTareasHoy() {
 char preguntarAccion() {
     char respuestaAccion;
     do {
-        printf("¿Qué deseas hacer?\n");
+        printf("Elige una tarea\n");
         printf("1. Agregar un estudio\n");
-        printf("2. Ver todos los estuidos\n");
+        printf("2. Ver todos los estudios\n");
         printf("3. Ver los estudios de hoy\n");
         printf("4. Marcar como estudiada \n");
-
+        printf("5. Cerrar el programa \n");
+        printf("\n  ");
         scanf(" %c", &respuestaAccion);
 
-        if (respuestaAccion != '1' && respuestaAccion != '2' && respuestaAccion != '3') {
+        if (respuestaAccion != '1' && respuestaAccion != '2' && respuestaAccion != '3' && respuestaAccion != '4' && respuestaAccion != '5') {
             printf("Respuesta no esperada, vuelve a intentarlo\n");
         }
-    } while (respuestaAccion != '1' && respuestaAccion != '2' && respuestaAccion != '3');
+    } while (respuestaAccion != '1' && respuestaAccion != '2' && respuestaAccion != '3' && respuestaAccion != '4' && respuestaAccion != '5');
+    printf("\n");
     return respuestaAccion;
 }
 
 bool anadirTarea(char tareaAnadir[], char fecha[]) {
-    int i = buscarIndiceFecha(fecha), j = numLineas;
+    int i = buscarPosicionFecha(fecha), j = numLineas;
+
     bool error = anadirLinea();
     if (error)
         return true;
 
-    
-    for (; j > i;j--) 
+
+    for (; j > i;j--)
         tareas[j] = tareas[j - 1];
     tareas[i] = (char*)malloc((strlen(tareaAnadir) + 1) * sizeof(char));
+    if (tareas[i] == NULL) {
+        printf("Error al asignar memoria anadiendo tarea");
+        return true;
+    }
+
     strcpy(tareas[i], tareaAnadir);
+    return false;
+}
+void moverTarea(int indiceOrigen, int indiceDestino) {
+    char* temp = tareas[indiceOrigen];
+    if (indiceOrigen > indiceDestino)
+        for (int i = indiceOrigen - 1; i >= indiceDestino; i--)
+            tareas[i + 1] = tareas[i];
+
+    else if (indiceOrigen < indiceDestino)
+        for (int i = indiceOrigen + 1; i <= indiceDestino; i++)
+            tareas[i - 1] = tareas[i];
+
+    tareas[indiceDestino] = temp;
+}
+bool copiarCambiosArchivo() {
+    // Abrir el archivo en modo escritura
+    FILE* tareasArchivo = fopen("tareas.txt", "w");
+    if (tareasArchivo == NULL) {
+        perror("Error al abrir el archivo");
+        return true;
+    }
+
+    // Escribir cada línea en el archivo
+    for (int i = 0; i < numLineas; i++)
+        fprintf(tareasArchivo, "%s\n", tareas[i]);  // Escribir la tarea actual en el archivo
+
+
+    // Cerrar el achivo
+    fclose(tareasArchivo);
+    printf("Cambios guardados\n");
     return false;
 }
 int main() {
     bool error = pasarTareasAVariable();
     if (error) {
-        printf("Error al pasar a la variable");
+        printf("Error al pasar a la variable\n");
+        liberarMemoria();
         return 1;
     }
 
-    printf("Hola, soy la máquina de estudio intervalado.\n");
-    char cerrarPrograma = 'a';
+    printf("Hola, soy el programa de estudio intervalado.");
+    bool programaFuncionando = true;
     do {
+        printf("\n\n");
         char respuestaAccion = preguntarAccion();
 
-        if (respuestaAccion = '1') {
-            char respuestaBinaria;
+        if (respuestaAccion == '1') {
             char nombre[50];
-            do {
-                printf("Cual es el nombre que le deseas dar al estudio?(menos de 50 caracteres y sin espacios)\n");
-                scanf(" %s", nombre);
-                do {
-                    printf("El nombre eligido es %s?(Y,N)", nombre);
-                    if (respuestaBinaria != 'Y' && respuestaBinaria != 'N')
-                        printf("La respuesta dada no es valida repita");
-                } while (respuestaBinaria != 'Y' && respuestaBinaria != 'N');
+            printf("Cual es el nombre que le deseas dar al estudio?(menos de 50 caracteres y sin espacios)\n");
+            scanf(" %s", nombre);
 
-            } while (respuestaBinaria == 'N');
-
-            char fechaAnterior[50];
+            char fechaAnterior[32];
             copiarFechaHoy(fechaAnterior);
 
-            int grado;
-            do {
-                printf("Cual es el grado que le deseas dar al estudio?(0 estudiar manana, 1 dentro de tres días, 2 una semana, 3 dos semanas, 4 un mes ...)\n");
-                scanf(" %s", grado);
+            char grado[3];
+            preguntarGrado(grado);
 
-                do {
-                    printf("El grado eligido es %s?(Y,N)", grado);
-                    if (respuestaBinaria != 'Y' && respuestaBinaria != 'N')
-                        printf("La respuesta dada no es valida repita");
-                } while (respuestaBinaria != 'Y' && respuestaBinaria != 'N');
 
-            } while (respuestaBinaria == 'N');
+            char fechaSiguiente[32];
+            calcularSiguienteFecha(*info_tiempo, atoi(grado), fechaSiguiente);
 
-            char fechaSiguiente[50];
-            calcularSiguienteFecha(*info_tiempo, grado, fechaSiguiente);
-
-            buscarIndiceFecha(fechaSiguiente);
+            buscarPosicionFecha(fechaSiguiente);
             char tareaAnadir[126];
-            sprintf(tareaAnadir, "%s %s %s %d\n", nombre, fechaAnterior, fechaSiguiente, grado);
+            snprintf(tareaAnadir, sizeof(tareaAnadir), "%s %s %s %s", nombre, fechaAnterior, fechaSiguiente, grado);
             anadirTarea(tareaAnadir, fechaSiguiente);
-        }
-
-
-
-
-
-        else if (respuestaAccion = '2') {
-            char linea[512]; // Buffer para almacenar cada línea
-
-            // Leer el archivo línea por línea y mostrarlo en pantalla
-            while (fgets(linea, sizeof(linea), tareasArchivo)) {
-                printf("%s", linea); // Mostrar la línea leída
+            printf("\n");
+            error = copiarCambiosArchivo();
+            if (error) {
+                printf("Error al copiar los cambios al archivo\n");
+                liberarMemoria();
+                return 1;
             }
-            fseek(tareasArchivo, 0, SEEK_SET);
+            printf("\n");
         }
 
 
 
 
+        else if (respuestaAccion == '2') {
+            if (numLineas == 0)
+                printf("No hay estudios guardados\n");
+            else
+                printf("Nombre   est ant   est post   grado\n");
+            for (int i = 0; i < numLineas;i++)
+                printf("%s\n", tareas[i]);
+        }
 
 
 
 
-        else if (respuestaAccion = '3') {
+        else if (respuestaAccion == '3') {
             escribirTareasHoy();
         }
 
 
-        else if (respuestaAccion = '4') {
-            buscarIndiceTareasHoy();
-            escribirTareasHoy();
-            bool dentroRango = true;
-            long posicion = 0;
-
-            posicion = ftell(tareasArchivo);
-            do {
-                int tareaEstudiada = 0;
-                printf("\n Que tarea quieres marcar como estudiada?(Escribe el numero)");
-                buscarIndiceTareasHoy();
-                scanf("%d", tareaEstudiada);
-                char linea[512];       // Buffer para almacenar cada línea
-                char fechaBuscar[100]; // La palabra que queremos buscar
-
-                sprintf(fechaBuscar, " %02d/%02d/%d",
-                    info_tiempo->tm_mday,      // Día del mes (1-31)
-                    info_tiempo->tm_mon + 1,   // Mes (0-11, por eso se suma 1)
-                    info_tiempo->tm_year + 1900);
-
-                int numerador = 1;
+        else if (respuestaAccion == '4') {
+            bool noHayTareas = escribirTareasHoy();
+            if (!noHayTareas) {
 
 
-                while (fgets(linea, sizeof(linea), tareasArchivo) && dentroRango && (numerador != tareaEstudiada)) {
-                    posicion = ftell(tareasArchivo);
-                    char* palabra;
-                    int palabra_numero = 1; // Contador de palabras
+                int indiceRelativo = 0;
+                char fechaHoy[100]; // La palabra que queremos buscar
+                copiarFechaHoy(fechaHoy);
 
-                    // Usar strtok para dividir la línea en palabras usando el espacio como delimitador
-                    palabra = strtok(linea, " \t\n"); // Eliminar espacios, tabulaciones y saltos de línea
+                int indiceTareasHoy = buscarIndiceTareasHoy();
+                char respuestaBinaria;
+                do {
+                    printf("\nQue tarea quieres marcar como estudiada?(Escribe el numero) \n");
+                    scanf(" %d", &indiceRelativo);
 
-                    // Iterar por cada palabra en la línea
-                    while (palabra != NULL) {
-                        if (palabra_numero == 3) { // Si es la tercera palabra
-                            if (strcmp(palabra, fechaBuscar) != 0) // Comprobar si es igual a la palabra buscada
-                                dentroRango = false;
-                            break; // Salir del bucle ya que solo nos interesa la tercera palabra
-                        }
-                        // Pasar a la siguiente palabra
-                        palabra = strtok(NULL, " \t\n");
-                        palabra_numero++;
-                    }
-                    numerador++;
+                    do {
+                        printf("El nombre eligido es:\n%s.\nEs correcto?(Y,N)\n  ", tareas[indiceRelativo + indiceTareasHoy - 1]);
+                        scanf(" %c", &respuestaBinaria);
+                        if (respuestaBinaria != 'Y' && respuestaBinaria != 'N')
+                            printf("La respuesta dada no es valida repita\n");
+                    } while (respuestaBinaria != 'Y' && respuestaBinaria != 'N');
+                    if (!fechaTareaAnteriorOIgual(indiceRelativo + indiceTareasHoy - 1, fechaHoy))
+                        printf("Numero incorrecto diga otro\n");
+                } while (!fechaTareaAnteriorOIgual(indiceRelativo + indiceTareasHoy - 1, fechaHoy) || respuestaBinaria == 'N');
+                printf("\n");
+                int indiceTareaEstudiada = indiceRelativo + indiceTareasHoy - 1;
+
+                char nombre[50], palabra2[50], fechaAntigua[50], gradoPrevio[50];
+                // Dividir la línea en palabras
+                sscanf(tareas[indiceTareaEstudiada], "%s %s %s %s", nombre, palabra2, fechaAntigua, gradoPrevio);
+
+                char grado[3];
+                printf("El grado actual es: %s\n", gradoPrevio);
+                preguntarGrado(grado);
+
+                char fechaSiguiente[50];
+                calcularSiguienteFecha(*info_tiempo, atoi(grado), fechaSiguiente);
+                // Reconstruir la línea con las modificaciones
+                snprintf(tareas[indiceTareaEstudiada], 126, "%s %s %s %s", nombre, fechaAntigua, fechaSiguiente, grado);
+
+
+                moverTarea(indiceTareaEstudiada, buscarPosicionFecha(fechaSiguiente));
+
+                printf("\n");
+                error = copiarCambiosArchivo();
+
+                if (error) {
+                    printf("Error al copiar los cambios al archivo\n");
+                    liberarMemoria();
+                    return 1;
                 }
-                if (dentroRango)
-                    printf("Ese numero no está disponible diga otro");
-            } while (!dentroRango);
-            fseek(tareasArchivo, posicion, SEEK_SET);
-
-
-            char linea[512];
-            char nombre[50], palabra2[50], fechaAntigua[50], gradoPrevio[50];
-
-            fgets(linea, sizeof(linea), tareasArchivo);
-            // Dividir la línea en palabras
-            sscanf(linea, "%s %s %s %s", nombre, palabra2, fechaAntigua, gradoPrevio);
-
-            int grado;
-            printf("Que grado quieres asignarle a la tarea el actual es: %d (0 estudiar manana, 1 dentro de tres días, 2 una semana, 3 dos semanas, 4 un mes ...)", gradoPrevio);
-            scanf(" %d", grado);
-
-            char fechaSiguiente[50];
-            calcularSiguienteFecha(*info_tiempo, grado, fechaSiguiente);
-            // Reconstruir la línea con las modificaciones
-            sprintf(linea, "%s %s %s %d\n", nombre, fechaAntigua, fechaSiguiente, grado);
-
-            // Limpiar el resto de la línea si la nueva es más corta que la anterior
-            fflush(tareasArchivo); // Asegura que la salida se escriba completamente
-
-            fseek(tareasArchivo, posicion, SEEK_SET);
-
-            ordenarTareas();
+            }
+            printf("\n");
         }
 
+        else if (respuestaAccion == '5')
+            programaFuncionando = false;
 
-
-
-        do {
-            printf("Tarea finalizada desea cerrar el programa?(Y, N)");
-            if (cerrarPrograma != 'Y' && cerrarPrograma != 'N')
-                printf("La respuesta dada no es valida repita");
-        } while (cerrarPrograma != 'Y' && cerrarPrograma != 'N');
-    } while (cerrarPrograma != 'Y');
-    // Mostrar las líneas leídas
-    printf("Liberando memoria:\n");
-    for (int i = 0; i < numLineas; i++) {
-        free(tareas[i]);  // Liberar la memoria de cada línea
-    }
-
-    free(tareas);  // Liberar el array dinámico
+    } while (programaFuncionando);
+    liberarMemoria();
     return 0;
 }
