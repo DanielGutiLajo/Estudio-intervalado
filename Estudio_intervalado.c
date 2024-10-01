@@ -7,11 +7,12 @@
 //* Organización de las tareas en el txt
 //Nombre sin espacios    ultima fecha       siguiente fecha       gradp
 
+char nombreArchivo[100];
 char** tareas = NULL;
-int numLineas = 0;
-int capacidad = 20;
+short numLineas = 0;
+short capacidad = 20;
 void liberarMemoria() {
-    printf("Liberando memoria:\n");
+    puts("Liberando memoria:");
     for (int i = 0; i < numLineas; i++) {
         free(tareas[i]);  // Liberar la memoria de cada línea
     }
@@ -19,35 +20,34 @@ void liberarMemoria() {
     free(tareas);  // Liberar el array dinámico
 }
 bool anadirLinea() {
+    numLineas++;
     if (numLineas >= capacidad) {
         capacidad *= 2;  // Doblar la capacidad del array
         char** temp = realloc(tareas, capacidad * sizeof(char*));
         if (temp == NULL) {
             perror("Error al reasignar memoria, en la funcióon anadirLinea");
-            for (int i = 0; i < numLineas; i++) {
+            for (int i = 0; i < numLineas; i++) 
                 free(tareas[i]);  // Liberar la memoria previamente asignada
-            }
             free(tareas);
-
             return true;
         }
         tareas = temp;
     }
-    numLineas++;
+    
     return false;
 }
 bool pasarTareasAVariable() {
     FILE* tareasArchivo;
     // Abrir el archivo de tareas
-    tareasArchivo = fopen("tareas.txt", "r");
+    tareasArchivo = fopen(nombreArchivo, "r");
 
     if (tareasArchivo == NULL) {
         // Si el archivo no existe, crearlo con "w+"
-        printf("El archivo tareas.txt no existe, creando uno vacío...\n");
-        tareasArchivo = fopen("tareas.txt", "w+");
+        printf("El archivo %s no existe, creando uno vacío...\n", nombreArchivo);
+        tareasArchivo = fopen(nombreArchivo, "w + ");
         if (tareasArchivo == NULL) {
             // Si por algún motivo la creación falla
-            printf("No se pudo crear el archivo.\n");
+            puts("No se pudo crear el archivo");
             return true;
         }
         return false;
@@ -70,7 +70,7 @@ bool pasarTareasAVariable() {
         if (len > 0 && buffer[len - 1] == '\n') {
             buffer[len - 1] = '\0';
         }
-        // Comprobar si necesitamos más espacio en el array de punteros
+        
         bool error = anadirLinea();
         if (error) {
             fclose(tareasArchivo);
@@ -97,7 +97,7 @@ bool pasarTareasAVariable() {
 void preguntarGrado(char grado[]) {
     bool gradoValido = false;
     do {
-        printf("Cual es el grado que le deseas dar al estudio?(0 estudiar manana, 1 dentro de tres días, 2 una semana, 3 dos semanas, 4 28 dias ...)\n  ");
+        puts("Cual es el grado que le deseas dar al estudio?(0 estudiar manana, 1 dentro de tres días, 2 una semana, 3 dos semanas, 4 28 dias ...)");
         scanf(" %s", grado);
 
         char* endptr;
@@ -105,9 +105,9 @@ void preguntarGrado(char grado[]) {
         if (atoi(grado) < 0 || atoi(grado) > 99 && *endptr != '\0') {
             // Verificar si la entrada es numérica
             if (*endptr != '\0')
-                printf("Entrada inválida. Por favor, ingresa un número.\n");
+                puts("Entrada inválida. Por favor, ingresa un número.");
             else
-                printf("Grado inválido. Por favor, ingresa un número entre 0 y 99\n");
+                puts("Grado inválido. Por favor, ingresa un número entre 0 y 99");
             gradoValido = false;
         }
         else
@@ -222,15 +222,13 @@ bool escribirTareasHoy() {
     copiarFechaHoy(fechaHoy);
 
     bool found = false;
-    printf("Nombre   est ant   est post   grado\n");
+    puts("Nombre   est ant   est post   grado");
     int i = 0;
     //Busca la primera tarea que es de hoy o anterior
     while (i < numLineas && !fechaTareaAnteriorOIgual(i, fechaHoy))
         i++;
-    if (i >= numLineas)
-        printf("No hay tareas programadas para hoy\n");
-    if (i < numLineas && !esTareaConFecha(i, fechaHoy))
-        printf("No hay tareas programadas para hoy\n");
+    if (i >= numLineas || !esTareaConFecha(i, fechaHoy))
+        puts("No hay tareas programadas para hoy");
 
     for (; i < numLineas && esTareaConFecha(i, fechaHoy); i++) {
         printf("%d. %s\n", numerador, tareas[i]);
@@ -239,7 +237,7 @@ bool escribirTareasHoy() {
 
     //Escribir tareas anteriores si las hay
     if (i < numLineas && fechaTareaAnteriorOIgual(i, fechaHoy)) {
-        printf("\nTareas anteriores\n");
+        puts("\nTareas anteriores");
         for (; i < numLineas; i++) {
             printf("%d. %s\n", numerador, tareas[i]);
             numerador++;
@@ -251,20 +249,19 @@ bool escribirTareasHoy() {
 char preguntarAccion() {
     char respuestaAccion;
     do {
-        printf("Elige una tarea\n");
-        printf("1. Agregar un estudio\n");
-        printf("2. Ver todos los estudios\n");
-        printf("3. Ver los estudios de hoy\n");
-        printf("4. Marcar como estudiada \n");
-        printf("5. Cerrar el programa \n");
-        printf("\n  ");
+        puts("Elige una tarea");
+        puts("1. Agregar un estudio");
+        puts("2. Ver todos los estudios");
+        puts("3. Ver los estudios de hoy");
+        puts("4. Marcar como estudiada ");
+        puts("5. Cerrar el programa ");
+        puts("");
         scanf(" %c", &respuestaAccion);
 
-        if (respuestaAccion != '1' && respuestaAccion != '2' && respuestaAccion != '3' && respuestaAccion != '4' && respuestaAccion != '5') {
-            printf("Respuesta no esperada, vuelve a intentarlo\n");
-        }
+        if (respuestaAccion != '1' && respuestaAccion != '2' && respuestaAccion != '3' && respuestaAccion != '4' && respuestaAccion != '5') 
+            puts("Respuesta no esperada, vuelve a intentarlo");
     } while (respuestaAccion != '1' && respuestaAccion != '2' && respuestaAccion != '3' && respuestaAccion != '4' && respuestaAccion != '5');
-    printf("\n");
+    puts("");
     return respuestaAccion;
 }
 
@@ -280,7 +277,7 @@ bool anadirTarea(char tareaAnadir[], char fecha[]) {
         tareas[j] = tareas[j - 1];
     tareas[i] = (char*)malloc((strlen(tareaAnadir) + 1) * sizeof(char));
     if (tareas[i] == NULL) {
-        printf("Error al asignar memoria anadiendo tarea");
+        puts("Error al asignar memoria anadiendo tarea");
         return true;
     }
 
@@ -301,7 +298,7 @@ void moverTarea(int indiceOrigen, int indiceDestino) {
 }
 bool copiarCambiosArchivo() {
     // Abrir el archivo en modo escritura
-    FILE* tareasArchivo = fopen("tareas.txt", "w");
+    FILE* tareasArchivo = fopen(nombreArchivo, "w");
     if (tareasArchivo == NULL) {
         perror("Error al abrir el archivo");
         return true;
@@ -318,14 +315,20 @@ bool copiarCambiosArchivo() {
     return false;
 }
 int main() {
+    fpust("Dime el nombre del archivo sin el txt ");
+    scanf("%s", nombreArchivo);
+
+    // Añadir la extensión al nombre
+    strcat(nombreArchivo, ".txt");
+      // Copiamos el nombre al resultado
     bool error = pasarTareasAVariable();
     if (error) {
-        printf("Error al pasar a la variable\n");
+        puts("Error al pasar a la variable");
         liberarMemoria();
         return 1;
     }
 
-    printf("Hola, soy el programa de estudio intervalado.");
+    puts("Hola, soy el programa de estudio intervalado.");
     bool programaFuncionando = true;
     do {
         printf("\n\n");
@@ -333,7 +336,7 @@ int main() {
 
         if (respuestaAccion == '1') {
             char nombre[50];
-            printf("Cual es el nombre que le deseas dar al estudio?(menos de 50 caracteres y sin espacios)\n");
+            puts("Cual es el nombre que le deseas dar al estudio?(menos de 50 caracteres y sin espacios)");
             scanf(" %s", nombre);
 
             char fechaAnterior[32];
@@ -350,14 +353,14 @@ int main() {
             char tareaAnadir[126];
             snprintf(tareaAnadir, sizeof(tareaAnadir), "%s %s %s %s", nombre, fechaAnterior, fechaSiguiente, grado);
             anadirTarea(tareaAnadir, fechaSiguiente);
-            printf("\n");
+            puts("");
             error = copiarCambiosArchivo();
             if (error) {
-                printf("Error al copiar los cambios al archivo\n");
+                puts("Error al copiar los cambios al archivo");
                 liberarMemoria();
                 return 1;
             }
-            printf("\n");
+            puts("")
         }
 
 
@@ -365,9 +368,9 @@ int main() {
 
         else if (respuestaAccion == '2') {
             if (numLineas == 0)
-                printf("No hay estudios guardados\n");
+                puts("No hay estudios guardados");
             else
-                printf("Nombre   est ant   est post   grado\n");
+                puts("Nombre   est ant   est post   grado");
             for (int i = 0; i < numLineas;i++)
                 printf("%s\n", tareas[i]);
         }
@@ -392,19 +395,19 @@ int main() {
                 int indiceTareasHoy = buscarIndiceTareasHoy();
                 char respuestaBinaria;
                 do {
-                    printf("\nQue tarea quieres marcar como estudiada?(Escribe el numero) \n");
+                    puts("\nQue tarea quieres marcar como estudiada?(Escribe el numero)");
                     scanf(" %d", &indiceRelativo);
 
                     do {
                         printf("El nombre eligido es:\n%s.\nEs correcto?(Y,N)\n  ", tareas[indiceRelativo + indiceTareasHoy - 1]);
                         scanf(" %c", &respuestaBinaria);
                         if (respuestaBinaria != 'Y' && respuestaBinaria != 'N')
-                            printf("La respuesta dada no es valida repita\n");
+                            puts("La respuesta dada no es valida repita");
                     } while (respuestaBinaria != 'Y' && respuestaBinaria != 'N');
                     if (!fechaTareaAnteriorOIgual(indiceRelativo + indiceTareasHoy - 1, fechaHoy))
-                        printf("Numero incorrecto diga otro\n");
+                        puts("Numero incorrecto diga otro");
                 } while (!fechaTareaAnteriorOIgual(indiceRelativo + indiceTareasHoy - 1, fechaHoy) || respuestaBinaria == 'N');
-                printf("\n");
+                pust("");
                 int indiceTareaEstudiada = indiceRelativo + indiceTareasHoy - 1;
 
                 char nombre[50], palabra2[50], fechaAntigua[50], gradoPrevio[50];
@@ -423,7 +426,7 @@ int main() {
 
                 moverTarea(indiceTareaEstudiada, buscarPosicionFecha(fechaSiguiente));
 
-                printf("\n");
+                puts("");
                 error = copiarCambiosArchivo();
 
                 if (error) {
@@ -432,7 +435,7 @@ int main() {
                     return 1;
                 }
             }
-            printf("\n");
+            puts("");
         }
 
         else if (respuestaAccion == '5')
