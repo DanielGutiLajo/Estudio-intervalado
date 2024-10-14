@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h> //cosas de strings
-
+#include "controlArchivos.h"
 //* Organización de las tareas en el txt
 //Nombre sin espacios    ultima fecha       siguiente fecha       gradp
 
@@ -11,6 +11,26 @@ char nombreArchivo[100];
 char** tareas = NULL;
 short numLineas = 0;
 short capacidad = 20;
+
+void saltoDobleLinea() {
+    puts("\n");
+}
+void saltoUnaLinea() {
+    puts("");
+}
+bool comprobar_NoY(const char respuesta) {
+    return respuesta != 'Y' && respuesta != 'N' && respuesta != 'y' && respuesta != 'n';
+}
+bool preguntar(char pregunta[]) {
+    char respuesta;
+    do {
+        printf("%s (Y,N) \n", pregunta);
+        scanf(" %c", &respuesta);
+        if (comprobar_NoY(respuesta))
+            puts("Respuesta incorrecta repita");
+    } while (comprobar_NoY(respuesta));
+    return (respuesta == 'Y' || respuesta == 'y');
+}
 void liberarMemoria() {
     puts("Liberando memoria:");
     for (int i = 0; i < numLineas; i++) {
@@ -19,6 +39,26 @@ void liberarMemoria() {
 
     free(tareas);  // Liberar el array dinámico
 }
+void anadirRutaAlInicio(char* nombreArchivo) {
+    // La ruta que queremos añadir al principio
+    const char* ruta = "Archivos\\";
+
+    // Tamaño necesario para la nueva cadena
+    size_t longitudRuta = strlen(ruta);
+    size_t longitudNombre = strlen(nombreArchivo);
+
+    // Asegúrate de que el tamaño del buffer es suficiente
+    if (longitudRuta + longitudNombre >= 100) { // Suponiendo que el tamaño máximo de nombreArchivo es 100
+        printf("Error: El nombre del archivo es demasiado largo.\n");
+        return;
+    }
+
+    // Mueve el contenido de nombreArchivo hacia adelante para hacer espacio para la ruta
+    memmove(nombreArchivo + longitudRuta, nombreArchivo, longitudNombre + 1);
+
+    // Copia la ruta al inicio
+    memcpy(nombreArchivo, ruta, longitudRuta);
+}
 bool anadirLinea() {
     numLineas++;
     if (numLineas >= capacidad) {
@@ -26,14 +66,14 @@ bool anadirLinea() {
         char** temp = realloc(tareas, capacidad * sizeof(char*));
         if (temp == NULL) {
             perror("Error al reasignar memoria, en la funcióon anadirLinea");
-            for (int i = 0; i < numLineas; i++) 
+            for (int i = 0; i < numLineas; i++)
                 free(tareas[i]);  // Liberar la memoria previamente asignada
             free(tareas);
             return true;
         }
         tareas = temp;
     }
-    
+
     return false;
 }
 bool pasarTareasAVariable() {
@@ -70,7 +110,7 @@ bool pasarTareasAVariable() {
         if (len > 0 && buffer[len - 1] == '\n') {
             buffer[len - 1] = '\0';
         }
-        
+
         bool error = anadirLinea();
         if (error) {
             fclose(tareasArchivo);
@@ -217,33 +257,39 @@ int buscarIndiceTareasHoy() {
 }
 
 bool escribirTareasHoy() {
+    puts("Estudios por hacer:");
     int numerador = 1;
     char fechaHoy[100];
     copiarFechaHoy(fechaHoy);
 
-    bool found = false;
-    puts("Nombre   est ant   est post   grado");
+    bool hayTareas = false;
     int i = 0;
     //Busca la primera tarea que es de hoy o anterior
     while (i < numLineas && !fechaTareaAnteriorOIgual(i, fechaHoy))
         i++;
     if (i >= numLineas || !esTareaConFecha(i, fechaHoy))
-        puts("No hay tareas programadas para hoy");
+        puts("No hay estudios programados para hoy");
+    else
+        puts("Nombre   est ant   est post   grado");
 
     for (; i < numLineas && esTareaConFecha(i, fechaHoy); i++) {
         printf("%d. %s\n", numerador, tareas[i]);
         numerador++;
+        hayTareas = true;
     }
 
     //Escribir tareas anteriores si las hay
     if (i < numLineas && fechaTareaAnteriorOIgual(i, fechaHoy)) {
-        puts("\nTareas anteriores");
+        if (!hayTareas)
+            puts("Nombre   est ant   est post   grado");
+        puts("\nEstudios anteriores");
         for (; i < numLineas; i++) {
             printf("%d. %s\n", numerador, tareas[i]);
             numerador++;
+            hayTareas = true;
         }
     }
-    return false;
+    return hayTareas;
 }
 
 char preguntarAccion() {
@@ -254,14 +300,15 @@ char preguntarAccion() {
         puts("2. Ver todos los estudios");
         puts("3. Ver los estudios de hoy");
         puts("4. Marcar como estudiada ");
-        puts("5. Cerrar el programa ");
-        puts("");
+        puts("5. Ver copias de seguridad ");
+        puts("6. Cerrar el programa ");
+        saltoUnaLinea();
         scanf(" %c", &respuestaAccion);
 
-        if (respuestaAccion != '1' && respuestaAccion != '2' && respuestaAccion != '3' && respuestaAccion != '4' && respuestaAccion != '5') 
+        if (respuestaAccion != '1' && respuestaAccion != '2' && respuestaAccion != '3' && respuestaAccion != '4' && respuestaAccion != '5' && respuestaAccion != '6')
             puts("Respuesta no esperada, vuelve a intentarlo");
-    } while (respuestaAccion != '1' && respuestaAccion != '2' && respuestaAccion != '3' && respuestaAccion != '4' && respuestaAccion != '5');
-    puts("");
+    } while (respuestaAccion != '1' && respuestaAccion != '2' && respuestaAccion != '3' && respuestaAccion != '4' && respuestaAccion != '5' && respuestaAccion != '6');
+    saltoUnaLinea();
     return respuestaAccion;
 }
 
@@ -315,12 +362,36 @@ bool copiarCambiosArchivo() {
     return false;
 }
 int main() {
-    fpust("Dime el nombre del archivo sin el txt ");
-    scanf("%s", nombreArchivo);
+    crearCarpetaSiNoExiste("Archivos");
+    int numArchivos;
+    char** tareasNombres = copiarNombreArchivos("Archivos\\*", &numArchivos);
+    for (int i = 0; i < numArchivos;i++)
+        printf("%d. %s\n", i + 1, tareasNombres[i]);
+    fputs("Escribe el numero del archivo que quieres o 0 para uno nuevo: ", stdout);
+    int decision = 0;
+    scanf("%d", &decision);
+    if (decision == 0) {
+        printf("Escribe el nombre del nuevo archivo: ");
+        scanf("%s", nombreArchivo);
+        // Añadir la extensión al nombre
+        strcat(nombreArchivo, ".txt");
+    }
+    else if (decision > 0 && decision <= numArchivos) {
+        strcpy(nombreArchivo, tareasNombres[decision - 1]);
+    }
+    else {
+        printf("Opción no válida.\n");
+        // Libera la memoria y termina el programa si la decisión no es válida
+        for (int i = 0; i < numArchivos; i++)
+            free(tareasNombres[i]);
+        free(tareasNombres);
+        return 1;
+    }
+    anadirRutaAlInicio(nombreArchivo);
+    for (int i = 0; i < numArchivos; i++)
+        free(tareasNombres[i]);
+    free(tareasNombres);
 
-    // Añadir la extensión al nombre
-    strcat(nombreArchivo, ".txt");
-      // Copiamos el nombre al resultado
     bool error = pasarTareasAVariable();
     if (error) {
         puts("Error al pasar a la variable");
@@ -328,10 +399,16 @@ int main() {
         return 1;
     }
 
+    saltoDobleLinea();
     puts("Hola, soy el programa de estudio intervalado.");
+
+    saltoUnaLinea();
+    escribirTareasHoy();
+    saltoDobleLinea();
+
     bool programaFuncionando = true;
     do {
-        printf("\n\n");
+        saltoDobleLinea();
         char respuestaAccion = preguntarAccion();
 
         if (respuestaAccion == '1') {
@@ -353,14 +430,14 @@ int main() {
             char tareaAnadir[126];
             snprintf(tareaAnadir, sizeof(tareaAnadir), "%s %s %s %s", nombre, fechaAnterior, fechaSiguiente, grado);
             anadirTarea(tareaAnadir, fechaSiguiente);
-            puts("");
+            saltoUnaLinea();
             error = copiarCambiosArchivo();
             if (error) {
                 puts("Error al copiar los cambios al archivo");
                 liberarMemoria();
                 return 1;
             }
-            puts("")
+            saltoUnaLinea();
         }
 
 
@@ -384,8 +461,8 @@ int main() {
 
 
         else if (respuestaAccion == '4') {
-            bool noHayTareas = escribirTareasHoy();
-            if (!noHayTareas) {
+            bool hayTareas = escribirTareasHoy();
+            if (hayTareas) {
 
 
                 int indiceRelativo = 0;
@@ -407,7 +484,7 @@ int main() {
                     if (!fechaTareaAnteriorOIgual(indiceRelativo + indiceTareasHoy - 1, fechaHoy))
                         puts("Numero incorrecto diga otro");
                 } while (!fechaTareaAnteriorOIgual(indiceRelativo + indiceTareasHoy - 1, fechaHoy) || respuestaBinaria == 'N');
-                pust("");
+                saltoUnaLinea();
                 int indiceTareaEstudiada = indiceRelativo + indiceTareasHoy - 1;
 
                 char nombre[50], palabra2[50], fechaAntigua[50], gradoPrevio[50];
@@ -426,7 +503,7 @@ int main() {
 
                 moverTarea(indiceTareaEstudiada, buscarPosicionFecha(fechaSiguiente));
 
-                puts("");
+                saltoUnaLinea();
                 error = copiarCambiosArchivo();
 
                 if (error) {
@@ -435,10 +512,29 @@ int main() {
                     return 1;
                 }
             }
-            puts("");
+        }
+        else if (respuestaAccion == '5') {
+            bool acabarCopia;
+            /*do {
+                int numeroCopiaRevisar = 0;
+                for (int i = 1; i < numCopias;i++)
+                    printf("%d. %s", i, copiaNombre[i]);
+                 saltoUnaLinea();
+                printf("Que copia quieres revisar?");
+                scanf(" %d", numeroCopiaRevisar);
+                copiaRevisar = fopen(copiaNombre[numeroCopiaRevisar], "r");
+                char buffer[128];
+                while (fgets(buffer, 128, copiaRevisar) != NULL)
+                    printf("%s", buffer);
+                fclose(copiaRevisar);
+                if (preguntar("Deseas sustituir el actual por la copia?"));
+                else
+                    acabarCopia = preguntar("Deseas terminar el proceso de revisar copias?");
+            } while (acabarCopia == "N" || acabarCopia == "n");*/
+
         }
 
-        else if (respuestaAccion == '5')
+        else if (respuestaAccion == '6')
             programaFuncionando = false;
 
     } while (programaFuncionando);
