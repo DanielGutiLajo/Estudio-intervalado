@@ -82,14 +82,8 @@ bool pasarTareasAVariable() {
     tareasArchivo = fopen(nombreArchivo, "r");
 
     if (tareasArchivo == NULL) {
-        // Si el archivo no existe, crearlo con "w+"
-        printf("El archivo %s no existe, creando uno vacío...\n", nombreArchivo);
-        tareasArchivo = fopen(nombreArchivo, "w + ");
-        if (tareasArchivo == NULL) {
-            // Si por algún motivo la creación falla
-            puts("No se pudo crear el archivo");
-            return true;
-        }
+        perror("Error al abrir el archivo");
+        fclose(tareasArchivo);
         return false;
     }
     // Asignar memoria inicial para el array de punteros a char
@@ -375,9 +369,17 @@ int main() {
         scanf("%s", nombreArchivo);
         // Añadir la extensión al nombre
         strcat(nombreArchivo, ".txt");
+        anadirRutaAlInicio(nombreArchivo);
+        FILE* archivo = fopen(nombreArchivo, "w");
+        if (archivo != NULL)
+            fclose(archivo);
+
+        else
+            printf("Error al abrir el archivo\n"); 
     }
     else if (decision > 0 && decision <= numArchivos) {
         strcpy(nombreArchivo, tareasNombres[decision - 1]);
+        anadirRutaAlInicio(nombreArchivo);
     }
     else {
         printf("Opción no válida.\n");
@@ -387,7 +389,7 @@ int main() {
         free(tareasNombres);
         return 1;
     }
-    anadirRutaAlInicio(nombreArchivo);
+    
     for (int i = 0; i < numArchivos; i++)
         free(tareasNombres[i]);
     free(tareasNombres);
