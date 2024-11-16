@@ -4,11 +4,17 @@ directories:
 appId: com.tuapp.id
 asarUnpack:
   - '**/*.node'
+files:
+  - filter:
+      - index.html
+      - main.js
+      - package.json
+      - script.js
+      - style.css
 extraFiles:
   - from: build/Release/miModuloNativo.node
     to: resources/miModuloNativo.node
 win:
   target: nsis
   icon: Imagenes/Icono-reloj-marron-recortado.ico
-files: []
 electronVersion: 33.0.2

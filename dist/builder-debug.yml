@@ -1,9 +1,13 @@
 x64:
   firstOrDefaultFilePatterns:
-    - '**/*'
     - '!**/node_modules'
     - '!build{,/**/*}'
     - '!dist{,/**/*}'
+    - index.html
+    - main.js
+    - package.json
+    - script.js
+    - style.css
     - '!**/*.{iml,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,suo,xproj,cc,d.ts,mk,a,o,forge-meta,pdb}'
     - '!**/._*'
     - '!**/electron-builder.{yaml,yml,json,json5,toml,ts}'
@@ -11,7 +15,13 @@ x64:
     - '!.yarn{,/**/*}'
     - '!.editorconfig'
     - '!.yarnrc.yml'
-  nodeModuleFilePatterns: []
+  nodeModuleFilePatterns:
+    - '**/*'
+    - index.html
+    - main.js
+    - package.json
+    - script.js
+    - style.css
 nsis:
   script: |-
     !include "C:\Users\donpu\Desktop\Proyectos-personales\Estudio-intervalado\Codigo\node_modules\app-builder-lib\templates\nsis\include\StdUtils.nsh"
@@ -88,7 +98,7 @@ nsis:
     !macroend
 
     !addplugindir /x86-unicode "C:\Users\donpu\AppData\Local\electron-builder\Cache\nsis\nsis-resources-3.4.1\plugins\x86-unicode"
-    !include "C:\Users\donpu\AppData\Local\Temp\t-VZ08H2\0-messages.nsh"
+    !include "C:\Users\donpu\AppData\Local\Temp\t-9m0bNG\0-messages.nsh"
 
     Var newStartMenuLink
     Var oldStartMenuLink

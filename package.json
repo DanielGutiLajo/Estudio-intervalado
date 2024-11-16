@@ -7,6 +7,14 @@
     "asarUnpack": [
       "**/*.node"
     ],
+    "files": [
+      "index.html",
+      "main.js",
+      "package.json",
+      "script.js",
+      "style.css",
+      "Imagenes/plus.svg"
+    ],
     "extraFiles": [
       {
         "from": "build/Release/miModuloNativo.node",
