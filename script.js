@@ -1,22 +1,105 @@
-// Suponiendo que tienes un array de elementos
-const estudiosAnteriores = ["Análisis", "Álgebra", "Probabilidad", "Mecánica"];
+/*function esperar(ms) {
+  console.log("hola");
+  return new Promise((resolve) => setTimeout(resolve, ms));
+  
+}
+   type="module" en el html
+await esperar(2000); */ // Espera 2 segundos
+let estudiosAnterioresSeparado = [];
+let fechaFormularioAnterior = new Date();
+const opciones = { day: "2-digit", month: "2-digit", year: "numeric" };
+const path = require("path");
+const miModuloNativo = require(path.join(process.resourcesPath, "miModuloNativo.node"));
+//const miModuloNativo = require("./build/Release/miModuloNativo");
+let modo = 1;
+function cambiarModo(modoNuevo) {
+  const array = ["botonTodos", "botonHoy", "botonManana"];
+  let boton = document.getElementById(array[modo]);
+  boton.disabled = false;
 
-// Selecciona el contenedor donde quieres agregar los divs
-const contenedor = document.getElementById("container");
+  boton = document.getElementById(array[modoNuevo]);
+  boton.disabled = true;
 
-const estudiosAnterioresString = `
-<div class="lista-borde" style="font-size: x-large; font-weight: 700;">Estudios anteriores</div>
+  modo = modoNuevo;
+  mostrarEstudios();
+}
+cargarEstudios();
+mostrarEstudios();
+
+function cargarEstudios() {
+  const archivos = miModuloNativo.archivosValidos();
+
+  const tituloHtml = document.getElementById("titulo");
+  const idArchivo = miModuloNativo.archivoAbrir();
+
+  tituloHtml.innerHTML = archivos[parseInt(idArchivo, 10)];
+  const estudiosAnteriores = miModuloNativo.pasarTareas();
+
+  //const estudiosAnteriores = ["Análisis", "Álgebra", "Probabilidad", "Mecánica"];
+  try {
+    console.log("Contenido de estudiosAnteriores:", estudiosAnteriores);
+  } catch (error) {
+    console.error("Error al imprimir estudiosAnteriores:", error);
+  }
+  for (let i = 0; i < estudiosAnteriores.length; i++) estudiosAnterioresSeparado[i] = estudiosAnteriores[i].split(" ");
+}
+function mostrarEstudios() {
+  const contenedor = document.getElementById("container");
+  contenedor.textContent = "";
+  const estudiosAnterioresString = `
+<div class="lista-borde" style="font-size: x-large; font-weight: 700; margin-left: 20px">Estudios anteriores</div>
 `;
+  if (estudiosAnterioresSeparado.length > 1) contenedor.insertAdjacentHTML("beforeend", estudiosAnterioresString);
+  // Itera sobre el array y crea un div por cada elemento
+  const divPadreLista = document.createElement("div");
+  divPadreLista.className = "divPadreLista";
+  const divTexto = document.createElement("div");
+  divPadreLista.appendChild(divTexto);
+  divTexto.className = "divTextoLista";
+  const arrayDivTexto = [];
+  let divBuffer;
+  tipos = ["Nombre", "Fecha anterior", "Fecha siguiente", "Grado"];
+  for (let j = 0; j < 4; j++) {
+    arrayDivTexto.push(document.createElement("div"));
+    divTexto.appendChild(arrayDivTexto[j]);
+    divBuffer = document.createElement("div");
+    divBuffer.textContent = tipos[j];
+    divBuffer.style.fontWeight = "600";
+    arrayDivTexto[j].appendChild(divBuffer);
+  }
+  const divSimbolos = document.createElement("div");
+  divPadreLista.appendChild(divSimbolos);
+  divBuffer = document.createElement("div");
+  divBuffer.style.height = "28.8px";
+  divSimbolos.appendChild(divBuffer);
 
-if (estudiosAnteriores.length > 1) contenedor.insertAdjacentHTML("beforeend", estudiosAnterioresString);
-// Itera sobre el array y crea un div por cada elemento
-estudiosAnteriores.forEach((elemento) => {
-  const div = document.createElement("div");
-  div.textContent = elemento; // Puedes personalizar el contenido del div aquí
-  div.className = "lista-borde"; // Asigna la clase CSS aquí
+  const hoy = new Date();
 
-  const divSvg = document.createElement("div");
-  const svgStringTick = `
+  if (modo == 2) {
+    hoy.setDate(hoy.getDate() + 1);
+    const mananaFormato = hoy.toLocaleDateString("es-ES", opciones);
+    let i = 0;
+    while (i < estudiosAnterioresSeparado.length && fechaMayor(estudiosAnterioresSeparado[i][2], mananaFormato)) i++;
+    for (; i < estudiosAnterioresSeparado.length; i++) escribirTareas(i);
+  } else if (modo == 1) {
+    const hoyFormato = hoy.toLocaleDateString("es-ES", opciones);
+    let i = 0;
+    while (i < estudiosAnterioresSeparado.length && fechaMayor(estudiosAnterioresSeparado[i][2], hoyFormato)) i++;
+    for (; i < estudiosAnterioresSeparado.length; i++) escribirTareas(i);
+  } else if (modo == 0) for (let i = 0; i < estudiosAnterioresSeparado.length; i++) escribirTareas(i);
+
+  function escribirTareas(indice) {
+    for (let j = 0; j < 4; j++) {
+      divBuffer = document.createElement("div");
+      divBuffer.textContent = estudiosAnterioresSeparado[indice][j];
+      arrayDivTexto[j].appendChild(divBuffer);
+    }
+    const divSvg = document.createElement("div");
+    divSvg.style.height = "28.8px";
+    divSvg.style.display = "flex";
+    divSvg.style.alignItems = "center";
+    divSvg.style.gap = "2px";
+    const svgStringTick = `
 <svg  xmlns="http://www.w3.org/2000/svg"  
 width="24"  
 height="24"  
@@ -30,10 +113,15 @@ class="tick">
 <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 12l5 5l10 -10" /><path d="M2 12l5 5m5 -5l5 -5" /></svg>
 `;
 
-  // Inserta el SVG en el div usando insertAdjacentHTML
-  divSvg.insertAdjacentHTML("beforeend", svgStringTick);
+    // Inserta el SVG en el div usando insertAdjacentHTML
+    divSvg.insertAdjacentHTML("beforeend", svgStringTick);
+    const svgTick = divSvg.querySelector(".tick");
+    // Añade el evento click dinámicamente con el valor de `i`
+    svgTick.addEventListener("click", function () {
+      abrirFormularioConfirmar(indice);
+    });
 
-  const svgStringLapiz = `
+    const svgStringLapiz = `
 <svg  xmlns="http://www.w3.org/2000/svg"  
 width="24"  
 height="24"  
@@ -48,10 +136,15 @@ class="lapiz">
 <path d="M16 5l3 3" /></svg>
 `;
 
-  // Inserta el SVG en el div usando insertAdjacentHTML
-  divSvg.insertAdjacentHTML("beforeend", svgStringLapiz);
+    // Inserta el SVG en el div usando insertAdjacentHTML
+    divSvg.insertAdjacentHTML("beforeend", svgStringLapiz);
+    const svgLapiz = divSvg.querySelector(".lapiz");
+    // Añade el evento click dinámicamente con el valor de `i`
+    svgLapiz.addEventListener("click", function () {
+      abrirFormularioEditar(indice); // Llama a la función `borrarTarea` con el valor correcto de `i`
+    });
 
-  const svgStringBasura = `
+    const svgStringBasura = `
 <svg  
   xmlns="http://www.w3.org/2000/svg"
   width="24"  
@@ -65,8 +158,150 @@ class="lapiz">
 </svg>
 `;
 
-  // Inserta el SVG en el div usando insertAdjacentHTML
-  divSvg.insertAdjacentHTML("beforeend", svgStringBasura);
-  div.appendChild(divSvg);
-  contenedor.appendChild(div); // Agrega el div al contenedor
-});
+    // Inserta el SVG en el div usando insertAdjacentHTML
+    divSvg.insertAdjacentHTML("beforeend", svgStringBasura);
+
+    // Selecciona el SVG recién añadido
+    const svgBasura = divSvg.querySelector(".basura");
+    // Añade el evento click dinámicamente con el valor de `i`
+    svgBasura.addEventListener("click", function () {
+      borrarTarea(indice); // Llama a la función `borrarTarea` con el valor correcto de `i`
+    });
+    divSimbolos.appendChild(divSvg);
+    contenedor.appendChild(divPadreLista); // Agrega el div al contenedor
+  }
+}
+function actualizarFechaGrado() {
+  const grado = document.getElementById("grado").value;
+  let diasAnadir;
+  if (grado == 0) diasAnadir = 1;
+  else if (grado == 1) diasAnadir = 3;
+  else if (grado == 2) diasAnadir = 7;
+  else diasAnadir = 7 * 2 ** (grado - 2);
+
+  const nuevaFecha = new Date(fechaFormularioAnterior);
+  nuevaFecha.setDate(nuevaFecha.getDate() + diasAnadir);
+  let fechaFormateada = nuevaFecha.toLocaleDateString("es-ES", opciones);
+  document.getElementById("siguiente").value = fechaFormateada;
+}
+function borrarTarea(indice) {
+  estudiosAnterioresSeparado.splice(indice, 1);
+  const contenedorFormulario = document.getElementById("Formulario");
+  if (contenedorFormulario) contenedorFormulario.remove();
+  mostrarEstudios();
+  miModuloNativo.borrarTarea(indice);
+}
+function abrirFormularioConfirmar(indice) {
+  fechaFormularioAnterior = new Date();
+  abrirFormulario();
+  document.getElementById("grado").value = parseInt(estudiosAnterioresSeparado[indice][3]) + 1;
+  actualizarFechaGrado();
+  document.getElementById("nombre").value = estudiosAnterioresSeparado[indice][0];
+  const nombre = document.getElementById("nombre");
+  nombre.removeAttribute("required"); // Elimina el atributo readonly
+  nombre.setAttribute("readonly", ""); // Añade el atributo required
+  const boton = document.getElementById("botonFormulario");
+  boton.addEventListener("click", function () {
+    editarTarea(indice); // Esto ejecutará la función solo cuando se haga clic
+  });
+}
+function abrirFormularioEditar(indice) {
+  console.log("inicia");
+  const partes = estudiosAnterioresSeparado[indice][1].split("/");
+  const dia = parseInt(partes[0], 10);
+  const mes = parseInt(partes[1], 10) - 1; // Mes basado en cero
+  const año = parseInt(partes[2], 10);
+
+  fechaFormularioAnterior = new Date(año, mes, dia);
+  console.log(fechaFormularioAnterior);
+  abrirFormulario();
+  document.getElementById("grado").value = estudiosAnterioresSeparado[indice][3];
+  actualizarFechaGrado();
+  document.getElementById("nombre").value = estudiosAnterioresSeparado[indice][0];
+  const siguiente = document.getElementById("siguiente");
+  siguiente.removeAttribute("readonly"); // Elimina el atributo readonly
+  siguiente.setAttribute("required", ""); // Añade el atributo required
+  const anterior = document.getElementById("anterior");
+  anterior.removeAttribute("readonly"); // Elimina el atributo readonly
+  anterior.setAttribute("required", ""); // Añade el atributo required
+  const boton = document.getElementById("botonFormulario");
+  boton.addEventListener("click", function () {
+    editarTarea(indice); // Esto ejecutará la función solo cuando se haga clic
+  });
+}
+function editarTarea(indice) {
+  let tarea = [
+    document.getElementById("nombre").value,
+    document.getElementById("anterior").value,
+    document.getElementById("siguiente").value,
+    document.getElementById("grado").value,
+  ];
+  if (indice < estudiosAnterioresSeparado.length) {
+    estudiosAnterioresSeparado[indice] = tarea;
+    console.log(estudiosAnterioresSeparado[indice]);
+    const informacion = tarea.join(" ");
+    eliminarFormulario();
+    mostrarEstudios();
+    console.log(informacion);
+    miModuloNativo.editarTarea(indice, informacion);
+  } else console.log("error");
+}
+function abrirFormularioAnadir() {
+  fechaFormularioAnterior = new Date();
+  abrirFormulario();
+  const boton = document.getElementById("botonFormulario");
+  boton.addEventListener("click", function () {
+    nuevaTarea(); // Esto ejecutará la función solo cuando se haga clic
+  });
+}
+function nuevaTarea() {
+  let tarea = [
+    document.getElementById("nombre").value,
+    document.getElementById("anterior").value,
+    document.getElementById("siguiente").value,
+    document.getElementById("grado").value,
+  ];
+  let i = 0;
+  while (i < estudiosAnterioresSeparado.length && fechaMayor(estudiosAnterioresSeparado[i][2], tarea[2])) i++;
+  estudiosAnterioresSeparado.splice(i, 0, tarea);
+  const informacion = tarea.join(" ");
+  eliminarFormulario();
+  mostrarEstudios();
+  miModuloNativo.nuevaTarea(informacion);
+}
+function abrirFormulario() {
+  const template = document.getElementById("formularioTemplate");
+  const clon = template.content.cloneNode(true);
+  document.body.appendChild(clon);
+
+  document.getElementById("anterior").value = fechaFormularioAnterior.toLocaleDateString("es-ES", opciones);
+
+  actualizarFechaGrado();
+
+  document.getElementById("grado").addEventListener("input", function () {
+    if (this.value < 0) this.value = 0; //no permite introducir valores negativos
+    actualizarFechaGrado();
+  });
+}
+function eliminarFormulario() {
+  const contenedorFormulario = document.getElementById("Formulario");
+  if (contenedorFormulario) contenedorFormulario.remove(); // Eliminar el elemento del DOM
+}
+function fechaMayor(fecha1, fecha2) {
+  // Divide la cadena de fecha en partes: día, mes y año
+  const partesFecha1 = fecha1.split("/");
+  const partesFecha2 = fecha2.split("/");
+
+  // Crea objetos Date usando el formato: año, mes (resta 1 porque los meses en Date comienzan desde 0), día
+  const date1 = new Date(partesFecha1[2], partesFecha1[1] - 1, partesFecha1[0]);
+  const date2 = new Date(partesFecha2[2], partesFecha2[1] - 1, partesFecha2[0]);
+
+  // Compara las fechas
+  if (date1 > date2) {
+    return true;
+  } else if (date1 < date2) {
+    return false;
+  } else {
+    return false;
+  }
+}

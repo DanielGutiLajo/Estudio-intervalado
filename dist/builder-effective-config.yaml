@@ -1,0 +1,14 @@
+directories:
+  output: dist
+  buildResources: build
+appId: com.tuapp.id
+asarUnpack:
+  - '**/*.node'
+extraFiles:
+  - from: build/Release/miModuloNativo.node
+    to: resources/miModuloNativo.node
+win:
+  target: nsis
+  icon: Imagenes/Icono-reloj-marron-recortado.ico
+files: []
+electronVersion: 33.0.2

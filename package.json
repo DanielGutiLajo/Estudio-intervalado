@@ -2,10 +2,29 @@
   "name": "tu-proyecto",
   "version": "1.0.0",
   "main": "main.js",
+  "build": {
+    "appId": "com.tuapp.id",
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "extraFiles": [
+      {
+        "from": "build/Release/miModuloNativo.node",
+        "to": "resources/miModuloNativo.node"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "Imagenes/Icono-reloj-marron-recortado.ico"
+    }
+  },
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder"
   },
   "devDependencies": {
-    "electron": "^33.0.2"
+    "electron": "^33.0.2",
+    "electron-builder": "^25.1.8",
+    "electron-rebuild": "^3.2.9"
   }
 }

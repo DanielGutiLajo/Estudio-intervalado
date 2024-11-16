@@ -3,16 +3,60 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Generar Divs</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Estudio intervalado</title>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div style="display: grid; place-items: center; background-color: #555; width: 100vw; height: 100vh; position: fixed">
-      <div id="container" style="aspect-ratio: 3/4; height: 80%; background-color: antiquewhite; ; font-size: larger; padding-top: 10px; ">
+    <div
+      style="
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #888;
+        width: 100%;
+        height: 100%;
+        position: fixed;
+        padding: 10px;
+        box-sizing: border-box;
+      "
+    >
+      <div id="titulo" style="color: white; font-size: large; margin-bottom: 5px;">Hola</div>
+      <div style="display: flex; gap:5px; margin-bottom: 10px;">
+        <button onclick="cambiarModo(1)" id="botonHoy" class="botonesTiempos" disabled>Hoy</button>
+        <button onclick="cambiarModo(2)" id="botonManana" class="botonesTiempos">Mañana</button>
+        <button onclick="cambiarModo(0)" id="botonTodos" class="botonesTiempos">Todos</button>
+      <img src="Imagenes/plus.svg" style="margin-bottom: 10px" onclick="abrirFormularioAnadir()" />
+      </div>
+      <div
+        id="container"
+        style="aspect-ratio: 1.618; overflow-y: auto; max-width: 80%; height: 80%; background-color: antiquewhite; font-size: larger; padding-top: 10px"
+      >
         <!--Elementos de la lista-->
       </div>
     </div>
-
+    <template id="formularioTemplate">
+      <div style="width: 100vw; height: 100vh; background-color: #6661; backdrop-filter: blur(10px); display: grid; place-items: center; font-size: large;"  id="Formulario">
+        <form>
+          <div>
+            Nombre:
+            <input type="text" id="nombre" name="nombre" required />
+          </div>
+          <div>
+            Fecha primer estudio:
+            <input type="text" id="anterior" name="fecha primer estudio" readonly />
+          </div>
+          <div>
+            Fecha siguiente estudio:
+            <input type="text" id="siguiente" name="fecha siguiente estudio" readonly />
+          </div>
+          <div>
+            Grado:
+            <input type="number" id="grado" name="grado" value="0" required />
+          </div>
+          <button type="submit" id="botonFormulario">Enviar</button>
+        </form>
+      </div>
+    </template>
     <script src="script.js"></script>
   </body>
 </html>

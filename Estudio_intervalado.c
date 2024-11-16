@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h> //cosas de strings
+
 #include "controlArchivos.h"
 //* Organización de las tareas en el txt
 //Nombre sin espacios    ultima fecha       siguiente fecha       gradp
@@ -41,7 +42,7 @@ void liberarMemoria() {
 }
 void anadirRutaAlInicio(char* nombreArchivo) {
     // La ruta que queremos añadir al principio
-    const char* ruta = "Archivos\\";
+    const char* ruta = "Archivos\\Estudios\\";
 
     // Tamaño necesario para la nueva cadena
     size_t longitudRuta = strlen(ruta);
@@ -357,8 +358,9 @@ bool copiarCambiosArchivo() {
 }
 int main() {
     crearCarpetaSiNoExiste("Archivos");
+    crearCarpetaSiNoExiste("Archivos\\Estudios");
     int numArchivos;
-    char** tareasNombres = copiarNombreArchivos("Archivos\\*", &numArchivos);
+    char** tareasNombres = copiarNombreArchivos("Archivos\\Estudios\\*", &numArchivos);
     for (int i = 0; i < numArchivos;i++)
         printf("%d. %s\n", i + 1, tareasNombres[i]);
     fputs("Escribe el numero del archivo que quieres o 0 para uno nuevo: ", stdout);
@@ -428,7 +430,6 @@ int main() {
             char fechaSiguiente[32];
             calcularSiguienteFecha(*info_tiempo, atoi(grado), fechaSiguiente);
 
-            buscarPosicionFecha(fechaSiguiente);
             char tareaAnadir[126];
             snprintf(tareaAnadir, sizeof(tareaAnadir), "%s %s %s %s", nombre, fechaAnterior, fechaSiguiente, grado);
             anadirTarea(tareaAnadir, fechaSiguiente);
@@ -516,8 +517,8 @@ int main() {
             }
         }
         else if (respuestaAccion == '5') {
-            bool acabarCopia;
-            /*do {
+            /*bool acabarCopia;
+            do {
                 int numeroCopiaRevisar = 0;
                 for (int i = 1; i < numCopias;i++)
                     printf("%d. %s", i, copiaNombre[i]);
@@ -543,3 +544,4 @@ int main() {
     liberarMemoria();
     return 0;
 }
+

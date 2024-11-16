@@ -1,0 +1,13 @@
+{
+  "configurations": [
+    {
+      "name": "Win32",
+      "includePath": ["C:/Users/donpu/AppData/Local/node-gyp/Cache/18.18.0/include/node"],
+      "defines": [],
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "linux-gcc-x64"
+    }
+  ],
+  "version": 4
+}
